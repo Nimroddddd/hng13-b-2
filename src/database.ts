@@ -17,7 +17,10 @@ function createPool(): Pool {
     password: dbPassword,
     port: dbPort,
     database: dbName,
-    user: dbUser
+    user: dbUser,
+    ssl: {
+      rejectUnauthorized: false, // required for managed DBs like Aiven
+    },
   })
 
   myPool.on("error", (err: Error) =>
