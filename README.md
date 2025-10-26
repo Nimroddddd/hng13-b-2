@@ -31,7 +31,7 @@ A REST API service that fetches, stores, and manages country information includi
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/Nimroddddd/hng13-b-2.git
 cd stage-2
 ```
 
