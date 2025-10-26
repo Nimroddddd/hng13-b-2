@@ -64,7 +64,7 @@ app.get("/countries/:name", async (req: Request, res: Response) => {
   const queryString = `SELECT * FROM countries where name = $1`
   const dbData = await query(queryString, [capitalizedName]) || []
   if (dbData.length === 0) return res.status(404).json({ "error": "Country not found" })
-  return res.json(dbData)
+  return res.json(dbData[0])
 })
 
 app.delete("/countries/:name", async (req: Request, res: Response) => {
@@ -93,7 +93,7 @@ app.get("/status", async (req: Request, res: Response) => {
   console.log(latestTime)
   return res.json({
     total_countries: length,
-    last_refeshed_at: latestTime
+    last_refreshed_at: latestTime
   })
 })
 
@@ -103,10 +103,14 @@ async function formatCountries(data: ICountry[]) {
     const { data: exchangeRates } = await axios.get("https://open.er-api.com/v6/latest/USD")
     const { rates } = exchangeRates
     data.forEach(country => {
-      const currency_code = country?.currencies?.[0]?.code
+      let currency_code = country?.currencies?.[0]?.code
       let exchange_rate = rates[currency_code]
       if (exchange_rate) exchange_rate = exchange_rate.toFixed(2)
-      const estimated_gdp = exchange_rate ? (country.population * (Math.floor(Math.random() * 10001) + 1000) / exchange_rate).toFixed(1) : 0
+      let estimated_gdp: any = exchange_rate ? (country.population * (Math.floor(Math.random() * 10001) + 1000) / exchange_rate).toFixed(1) : 0
+      if (!country.currencies) {
+        estimated_gdp = null
+        exchange_rate = null
+      }
       const { name, region, capital, population, flag } = country
       const formattedCountry = { 
         name, 
@@ -183,7 +187,7 @@ async function generateSummaryImage() {
 }
 
 function generateQueryStringFromReqQuery(query: any): string {
-  const queryFields = ["name", "capital", "region", "currency_code", "flag_url", "sort"]
+  const queryFields = ["name", "capital", "region", "currency_code", "flag_url", "sort", "code"]
   let queryString = "SELECT * FROM countries"
   if (query) {
     Object.entries(query).forEach(([key, value]: any) => {
@@ -193,6 +197,7 @@ function generateQueryStringFromReqQuery(query: any): string {
           console.log(split[1])
           if (["asc", "desc"].includes(split[1]) && ["gdp", "population", "rate"].includes(split[0])) queryString += ` ORDER BY ${split[0]} ${split[1]}`
         } else {
+          if (key === "currency_code") key ==="currency"
           if (queryString === "SELECT * FROM countries") {
             queryString = `SELECT * FROM countries WHERE ${key} = '${value}'`
           } else {
